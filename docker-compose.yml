@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  haproxy:
+    image: haproxy:2.9
+    container_name: haproxy
+    ports:
+      - "80:80"
+      - "8404:8404" # 把 8404 映射出來 → HAProxy stats 頁面（可視化看 UP/DOWN）
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - ap1
+      - ap2
+    networks:
+      - public_net
+      - private_net
+
+  ap1:
+    build: ./ap
+    container_name: ap1
+    networks:
+      - private_net
+    depends_on:
+      - db
+
+  ap2:
+    build: ./ap
+    container_name: ap2
+    networks:
+      - private_net
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8
+    container_name: db
+    environment:
+      MYSQL_ROOT_PASSWORD: Dev12876266
+      MYSQL_DATABASE: test
+      MYSQL_ROOT_HOST: "%"
+    networks:
+      - private_net
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+volumes:
+  db_data:
+
+networks:
+  public_net:
+    driver: bridge
+  private_net:
+    driver: bridge
