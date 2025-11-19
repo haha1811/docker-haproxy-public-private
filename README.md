@@ -408,3 +408,230 @@ Remove-Item $fullPath
 整套是非常完整的「本機版微型負載平衡系統」，也能直接延伸到正式環境概念。
 
 ---
+
+以下是 **專為你的分支 feature-haproxy-ap-sftp-db 設計的 README.md 範本**，內容完整、清楚，適合放在 GitHub 上，也能同步複製到 HackMD。
+
+我依照你目前實作的環境：
+**HAProxy + AP1/AP2 + MySQL + SFTP (atmoz/sftp) + 公網/私網雙網段設計 + 踩雷紀錄**
+整理成一份「專案級技術文件」。
+
+你可以直接複製整份 README.md，或告訴我需要更多章節，我會幫你補上。
+
+---
+
+# 📘 README.md（建議版）
+
+```markdown
+# HAProxy + AP1/AP2 + MySQL + SFTP (atmoz/sftp)
+
+## Public / Private Network Docker Architecture (Feature Branch)
+
+本分支 `feature-haproxy-ap-sftp-db` 用於測試完整的 **前端負載平衡 + 公私網分離 + SFTP 服務 + MySQL 資料庫** 架構，並記錄實作流程與踩雷處理方式。
+
+此分支專注於：
+
+- HAProxy 前端負載平衡
+- AP1 / AP2 兩台後端模擬 Web Server
+- MySQL 資料庫（Private Subnet）
+- SFTP 伺服器（可供外部資料交換）
+- Public / Private Network 分離（Docker bridge networks）
+- 各種常見錯誤與解決方法（含 CRLF/LF、SSH Host Key、SFTP 錯誤等）
+
+---
+
+## 📌 專案架構總覽
+```
+
+```
+                   +---------------------+
+                   |      Internet       |
+                   +----------+----------+
+                              |
+                        (Port 80 / 22)
+                              |
+                    +---------v---------+
+                    |     HAProxy       |
+                    |   (public_net)    |
+                    +---------+---------+
+                              |
+           +------------------+------------------+
+           |                                     |
+   +-------v-------+                     +-------v-------+
+   |      ap1      |                     |      ap2      |
+   | (private_net) |                     | (private_net) |
+   +-------+-------+                     +-------+-------+
+           |                                     |
+           +------------------+------------------+
+                              |
+                      +-------v-------+
+                      |      db       |
+                      | (MySQL 8.0)   |
+                      | (private_net) |
+                      +---------------+
+```
+
+SFTP:
+sftp-prod 容器同時在 public_net + private_net
+對外開放 22 埠，可供測試 SFTP 登入
+
+```
+
+---
+
+## 📁 目錄結構
+
+新增 `Folder` 及 `Files`
+
+```
+
+project/
+├── docker-compose.yml
+├── haproxy/
+│ └── haproxy.cfg
+├── ap/
+│ ├── Dockerfile
+│ └── index.php / health.php（供示範）
+├── db/
+│ └── init.sql
+└── sftp/
+├── users.conf
+├── foo/
+└── README.md
+
+````
+
+---
+
+## 🚀 啟動專案
+
+```bash
+docker compose up -d
+````
+
+查看容器狀態：
+
+```bash
+docker compose ps -a
+```
+
+如果全部成功，你會看到：
+
+| Container | Status |
+| --------- | ------ |
+| haproxy   | Up     |
+| ap1       | Up     |
+| ap2       | Up     |
+| db        | Up     |
+| sftp-prod | Up     |
+| sftp-uat  | Up     |
+
+---
+
+## 🌐 服務連線方式
+
+### 1️⃣ HAProxy 網站入口
+
+```
+http://localhost/
+```
+
+### 2️⃣ HAProxy Stats 頁面
+
+```
+http://localhost:8404/stats
+```
+
+可視覺化看到 AP1/AP2 的健康狀態。
+
+### 3️⃣ SFTP 登入
+
+帳號設定於：
+
+```
+sftp/users.conf
+```
+
+測試登入：
+
+```bash
+sftp foo@localhost
+```
+
+---
+
+## ⚠️ 踩雷紀錄（重要）
+
+### 1️⃣ Windows CRLF 造成 SFTP users.conf 無法解析
+
+錯誤訊息：
+
+```
+do not match required regex pattern: [[:digit:]]*
+```
+
+**原因：** Windows 編輯的 `users.conf` 在行尾會多出 `\r` 導致 uid/gid 解析失敗。
+
+**解法：**
+
+使用 VS Code → 右下角改成 `LF` 儲存
+或手動：
+
+```bash
+dos2unix sftp/users.conf
+```
+
+---
+
+### 2️⃣ SSH 出現 WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED
+
+因為重建 SFTP 容器會生成新的 Host Key。
+
+解法：
+
+```bash
+ssh-keygen -f ~/.ssh/known_hosts -R localhost
+```
+
+---
+
+## 🛠 HAProxy 配置摘要
+
+位於：
+
+```
+haproxy/haproxy.cfg
+```
+
+重點：
+
+- HTTP frontend、backend
+- SFTP frontend（TCP）
+- AP1 / AP2 健康檢查
+- Stats dashboard
+
+---
+
+## 🗄 MySQL 初始化（init.sql）
+
+系統第一次啟動會自動匯入：
+
+```
+db/init.sql
+```
+
+---
+
+## 📌 開發流程紀錄（Feature Branch）
+
+此分支用於：
+
+- 實驗 Docker 多網段架構
+- 測試 HAProxy + AP Round Robin
+- 測試 SFTP (atmoz/sftp)
+- 嘗試資料夾掛載與帳號管理
+- 解決 CRLF、Host Key、SSH 連線等問題
+- 保存所有測試過程與設定檔
+
+此分支會持續更新，如需合併到 main，將透過 PR 處理。
+
+---
