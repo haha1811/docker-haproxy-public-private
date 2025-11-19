@@ -45,6 +45,30 @@ services:
       - db_data:/var/lib/mysql
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
+  sftp-prod:
+    image: atmoz/sftp
+    container_name: sftp-prod
+    networks:
+      - private_net
+    volumes:
+      - ./sftp/users.conf:/etc/sftp/users.conf:ro
+      - ./sftp/prod/upload:/home/foo/upload
+      - ./sftp/prod/upload:/home/bar/upload
+    ports:
+      - 22:22
+
+  sftp-uat:
+    image: atmoz/sftp
+    container_name: sftp-uat
+    networks:
+      - private_net
+    volumes:
+      - ./sftp/users.conf:/etc/sftp/users.conf:ro
+      - ./sftp/uat/upload:/home/foo/upload
+      - ./sftp/uat/upload:/home/bar/upload
+    ports:
+      - 8022:22
+
 volumes:
   db_data:
 
