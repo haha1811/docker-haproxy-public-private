@@ -49,6 +49,7 @@ services:
     image: atmoz/sftp
     container_name: sftp-prod
     networks:
+      - public_net
       - private_net
     volumes:
       - ./sftp/users.conf:/etc/sftp/users.conf:ro
@@ -61,6 +62,7 @@ services:
     image: atmoz/sftp
     container_name: sftp-uat
     networks:
+      - public_net
       - private_net
     volumes:
       - ./sftp/users.conf:/etc/sftp/users.conf:ro

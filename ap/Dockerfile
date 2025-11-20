@@ -5,6 +5,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # 安裝 Apache、PHP 7.4 相關套件
 RUN apt-get update && \
     apt-get install -y \
+        openssh-client \
         apache2 \
         vim \
         net-tools \
